@@ -4,8 +4,9 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../../components/ErrorAlert.tsx';
 import { useAsync } from '../../hooks/use-async.ts';
+import { ResultLog } from '../../models.ts';
 import { useStore } from '../../store.ts';
-import { parseAlgorithmLogs } from '../../utils/algorithm.tsx';
+import {  parseAlgorithmLogs } from '../../utils/algorithm.tsx';
 import { HomeCard } from './HomeCard.tsx';
 
 export function LoadFromUrl(): ReactNode {
@@ -18,7 +19,7 @@ export function LoadFromUrl(): ReactNode {
   const searchParams = useSearchParams()[0];
 
   const loadAlgorithm = useAsync(async (logsUrl: string): Promise<void> => {
-    const logsResponse = await axios.get(logsUrl);
+    const logsResponse = await axios.get<ResultLog>(logsUrl);
     setAlgorithm(parseAlgorithmLogs(logsResponse.data));
     navigate(`/visualizer?open=${logsUrl}`);
   });

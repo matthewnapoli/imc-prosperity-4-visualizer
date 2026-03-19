@@ -6,7 +6,7 @@ import { ErrorAlert } from '../../components/ErrorAlert';
 import { ScrollableCodeHighlight } from '../../components/ScrollableCodeHighlight.tsx';
 import { useActualColorScheme } from '../../hooks/use-actual-color-scheme.ts';
 import { useAsync } from '../../hooks/use-async.ts';
-import { AlgorithmSummary } from '../../models.ts';
+import { AlgorithmSummary, ResultLog } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import {
   downloadAlgorithmLogs,
@@ -48,9 +48,9 @@ export function AlgorithmDetail({ position, algorithm, proxy }: AlgorithmDetailP
 
   const openInVisualizer = useAsync<void>(async () => {
     const logsUrl = await getAlgorithmLogsUrl(algorithm.id);
-    const logsResponse = await axios.get(proxy + logsUrl);
-
-    setAlgorithm(parseAlgorithmLogs(logsResponse.data, algorithm));
+    const logsResponse = await axios.get<ResultLog>(proxy + logsUrl);
+    const alg = parseAlgorithmLogs(logsResponse.data, algorithm)
+    setAlgorithm(alg);
     navigate('/visualizer');
   });
 

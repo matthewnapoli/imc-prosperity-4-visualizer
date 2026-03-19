@@ -5,6 +5,7 @@ import { ReactNode, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ErrorAlert } from '../../components/ErrorAlert.tsx';
 import { useAsync } from '../../hooks/use-async.ts';
+import { ResultLog } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import { parseAlgorithmLogs } from '../../utils/algorithm.tsx';
 import { HomeCard } from './HomeCard.tsx';
@@ -36,7 +37,9 @@ export function LoadFromFile(): ReactNode {
 
         reader.addEventListener('load', () => {
           try {
-            setAlgorithm(parseAlgorithmLogs(reader.result as string));
+            const resultLog = JSON.parse(reader.result as string) as ResultLog;
+            const algorithm = parseAlgorithmLogs(resultLog);
+            setAlgorithm(algorithm);
             navigate('/visualizer');
             resolve();
           } catch (err: any) {

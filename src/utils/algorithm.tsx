@@ -237,10 +237,7 @@ function getAlgorithmData(resultLog: ResultLog): AlgorithmDataRow[] {
   return rows;
 }
 
-export function parseAlgorithmLogs(logs: string, summary?: AlgorithmSummary): Algorithm {
-  // const logLines = logs.trim().split(/\r?\n/);
-
-  const resultLog = JSON.parse(logs) as ResultLog;
+export function parseAlgorithmLogs(resultLog: ResultLog, summary?: AlgorithmSummary): Algorithm {
 
   const activityLogs = getActivityLogs(resultLog.activitiesLog);
   const data = getAlgorithmData(resultLog);
