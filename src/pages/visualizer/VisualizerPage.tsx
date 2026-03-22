@@ -8,6 +8,7 @@ import { CandlestickChart } from './CandlestickChart.tsx';
 import { ConversionPriceChart } from './ConversionPriceChart.tsx';
 import { EnvironmentChart } from './EnvironmentChart.tsx';
 import { OrdersChart } from './OrdersChart.tsx';
+import { OrdersPriceChart } from './OrdersPriceChart.tsx';
 import { PlainValueObservationChart } from './PlainValueObservationChart.tsx';
 import { PositionChart } from './PositionChart.tsx';
 import { ProductPriceChart } from './ProductPriceChart.tsx';
@@ -80,6 +81,12 @@ export function VisualizerPage(): ReactNode {
     symbolColumns.push(
       <Grid.Col key={`${symbol} - orders`} span={{ xs: 12, sm: 6 }}>
         <OrdersChart symbol={symbol} />
+      </Grid.Col>,
+    );
+
+    symbolColumns.push(
+      <Grid.Col key={`${symbol} - orders price`} span={{ xs: 12, sm: 6 }}>
+        <OrdersPriceChart symbol={symbol} />
       </Grid.Col>,
     );
 
