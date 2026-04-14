@@ -59,6 +59,7 @@ export interface ActivityLogRow {
   askPrices: number[];
   askVolumes: number[];
   midPrice: number;
+  isFilledMidPrice?: boolean;
   profitLoss: number;
 }
 

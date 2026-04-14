@@ -31,6 +31,9 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
   const [viewMode, setViewMode] = useState<ViewMode>('price');
 
   const rows = algorithm.activityLogs.filter(row => row.product === symbol);
+  const filledMidPriceData: [number, number][] = rows
+    .filter(row => row.isFilledMidPrice)
+    .map(row => [row.timestamp, row.midPrice]);
   const [groupSize, setGroupSize] = useState(() => defaultGroupSize(rows.length));
   const size = parseInt(groupSize);
 
@@ -81,6 +84,13 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
       { type: 'line', name: 'Bid 2', color: getBidColor(0.75), marker: { symbol: 'circle' }, data: [] },
       { type: 'line', name: 'Bid 1', color: getBidColor(1.0), marker: { symbol: 'triangle' }, data: [] },
       { type: 'line', name: 'Mid price', color: 'gray', dashStyle: 'Dash', marker: { symbol: 'diamond' }, data: [] },
+      {
+        type: 'scatter',
+        name: 'Filled mid price',
+        color: '#9ca3af',
+        marker: { symbol: 'star', radius: 6 },
+        data: filledMidPriceData,
+      },
       { type: 'line', name: 'Ask 1', color: getAskColor(1.0), marker: { symbol: 'triangle-down' }, data: [] },
       { type: 'line', name: 'Ask 2', color: getAskColor(0.75), marker: { symbol: 'circle' }, data: [] },
       { type: 'line', name: 'Ask 3', color: getAskColor(0.5), marker: { symbol: 'square' }, data: [] },
@@ -92,7 +102,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
       }
       (priceSeries[3] as any).data.push([row.timestamp, row.midPrice]);
       for (let i = 0; i < row.askPrices.length; i++) {
-        (priceSeries[i + 4] as any).data.push([row.timestamp, row.askPrices[i]]);
+        (priceSeries[i + 5] as any).data.push([row.timestamp, row.askPrices[i]]);
       }
     }
 

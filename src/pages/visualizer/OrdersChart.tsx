@@ -10,32 +10,6 @@ export interface OrdersChartProps {
   symbol: ProsperitySymbol;
 }
 
-const rendererSymbols = Highcharts.SVGRenderer.prototype.symbols as Record<
-  string,
-  (x: number, y: number, w: number, h: number) => Highcharts.SVGPathArray
->;
-
-if (rendererSymbols.star === undefined) {
-  rendererSymbols.star = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
-    const centerX = x + w / 2;
-    const centerY = y + h / 2;
-    const outerRadius = Math.min(w, h) / 2;
-    const innerRadius = outerRadius * 0.45;
-    const path: Highcharts.SVGPathArray = [];
-
-    for (let i = 0; i < 10; i++) {
-      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
-      const radius = i % 2 === 0 ? outerRadius : innerRadius;
-      const px = centerX + radius * Math.cos(angle);
-      const py = centerY + radius * Math.sin(angle);
-      path.push([i === 0 ? 'M' : 'L', px, py]);
-    }
-
-    path.push(['Z']);
-    return path;
-  };
-}
-
 function getTradeCategory(tradeType?: ResultLogTradeType): 'maker' | 'taker' | 'other' {
   if (tradeType === 'make') return 'maker';
   if (tradeType === 'take' || tradeType === undefined) return 'taker';
@@ -60,6 +34,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
   const [priceMode, setPriceMode] = useState<'mid' | 'bidask'>('bidask');
 
   const midPriceData: [number, number][] = [];
+  const filledMidPriceData: [number, number][] = [];
   const bid1Data: [number, number][] = [];
   const bid2Data: [number, number][] = [];
   const bid3Data: [number, number][] = [];
@@ -71,6 +46,9 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     if (row.product !== symbol) continue;
 
     midPriceData.push([row.timestamp, row.midPrice]);
+    if (row.isFilledMidPrice) {
+      filledMidPriceData.push([row.timestamp, row.midPrice]);
+    }
 
     if (row.bidPrices.length >= 1) bid1Data.push([row.timestamp, row.bidPrices[0]]);
     if (row.bidPrices.length >= 2) bid2Data.push([row.timestamp, row.bidPrices[1]]);
@@ -173,6 +151,14 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             data: midPriceData,
             marker: { enabled: false },
             enableMouseTracking: false,
+          },
+          {
+            type: 'scatter',
+            name: 'Filled mid price',
+            color: '#9ca3af',
+            data: filledMidPriceData,
+            marker: { symbol: 'star', radius: 6 },
+            dataGrouping: { enabled: false },
           },
         ]
       : [

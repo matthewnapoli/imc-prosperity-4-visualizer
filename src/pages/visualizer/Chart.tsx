@@ -15,6 +15,32 @@ HighchartsAccessibility(Highcharts);
 HighchartsExporting(Highcharts);
 HighchartsOfflineExporting(Highcharts);
 
+const rendererSymbols = Highcharts.SVGRenderer.prototype.symbols as Record<
+  string,
+  (x: number, y: number, w: number, h: number) => Highcharts.SVGPathArray
+>;
+
+if (rendererSymbols.star === undefined) {
+  rendererSymbols.star = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
+    const centerX = x + w / 2;
+    const centerY = y + h / 2;
+    const outerRadius = Math.min(w, h) / 2;
+    const innerRadius = outerRadius * 0.45;
+    const path: Highcharts.SVGPathArray = [];
+
+    for (let i = 0; i < 10; i++) {
+      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const px = centerX + radius * Math.cos(angle);
+      const py = centerY + radius * Math.sin(angle);
+      path.push([i === 0 ? 'M' : 'L', px, py]);
+    }
+
+    path.push(['Z']);
+    return path;
+  };
+}
+
 // Highcharts themes are distributed as Highcharts extensions
 // The normal way to use them is to apply these extensions to the global Highcharts object
 // However, themes work by overriding the default options, with no way to rollback

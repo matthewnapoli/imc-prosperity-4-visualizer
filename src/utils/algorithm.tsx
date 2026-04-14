@@ -51,6 +51,7 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
   // }
   const lines = logLines.split('\n');
   const rows: ActivityLogRow[] = [];
+  const previousMidPrices: Record<string, number | undefined> = {};
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -60,6 +61,11 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
 
     const columns = line.split(';');
 
+    const loggedMidPrice = Number(columns[15]);
+    const previousMidPrice = previousMidPrices[columns[2]];
+    const shouldFillMidPrice = loggedMidPrice === 0 && previousMidPrice !== undefined;
+    const midPrice = shouldFillMidPrice ? previousMidPrice : loggedMidPrice;
+
     rows.push({
       day: Number(columns[0]),
       timestamp: Number(columns[1]),
@@ -68,9 +74,14 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
       bidVolumes: getColumnValues(columns, [4, 6, 8]),
       askPrices: getColumnValues(columns, [9, 11, 13]),
       askVolumes: getColumnValues(columns, [10, 12, 14]),
-      midPrice: Number(columns[15]),
+      midPrice,
+      isFilledMidPrice: shouldFillMidPrice,
       profitLoss: Number(columns[16]),
     });
+
+    if (midPrice !== 0) {
+      previousMidPrices[columns[2]] = midPrice;
+    }
   }
 
   return rows;
