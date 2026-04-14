@@ -7,7 +7,9 @@ import { Chart } from './Chart.tsx';
 function getLimit(algorithm: Algorithm, symbol: ProsperitySymbol): number {
   const knownLimits: Record<string, number> = {
     TOMATOES: 80,
-    EMERALDS: 80
+    EMERALDS: 80,
+    ASH_COATED_OSMIUM: 80,
+    INTARIAN_PEPPER_ROOT: 80
   };
 
   if (knownLimits[symbol] !== undefined) {

@@ -28,7 +28,7 @@ type ViewMode = 'movement' | 'price' | 'volume';
 
 export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
   const algorithm = useStore(state => state.algorithm)!;
-  const [viewMode, setViewMode] = useState<ViewMode>('movement');
+  const [viewMode, setViewMode] = useState<ViewMode>('price');
 
   const rows = algorithm.activityLogs.filter(row => row.product === symbol);
   const [groupSize, setGroupSize] = useState(() => defaultGroupSize(rows.length));

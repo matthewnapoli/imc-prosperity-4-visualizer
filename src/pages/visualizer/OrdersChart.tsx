@@ -12,7 +12,7 @@ export interface OrdersChartProps {
 
 export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
   const algorithm = useStore(state => state.algorithm)!;
-  const [priceMode, setPriceMode] = useState<'mid' | 'bidask'>('mid');
+  const [priceMode, setPriceMode] = useState<'mid' | 'bidask'>('bidask');
 
   const midPriceData: [number, number][] = [];
   const bid1Data: [number, number][] = [];
