@@ -64,6 +64,9 @@ export function Chart({ title, options, series, min, max, controls }: ChartProps
         height: 400,
         zooming: {
           type: 'x',
+          mouseWheel: {
+            enabled: false,
+          },
         },
         panning: {
           enabled: true,
