@@ -289,7 +289,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
       name: 'Other trades',
       color: '#a855f7',
       data: otherTradeData,
-      marker: { symbol: 'diamond', radius: 5 },
+      marker: { symbol: 'circle', radius: 5 },
       tooltip: otherTradeTooltip,
       dataGrouping: { enabled: false },
     },
