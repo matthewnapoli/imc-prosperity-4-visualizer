@@ -5,6 +5,8 @@ export interface ResultLog {
   tradeHistory: ResultLogTradeHistoryItem[];
 }
 
+export type ResultLogTradeType = 'make' | 'take' | 'market';
+
 export interface ResultLogItems {
   sandboxLog: string;
   lambdaLog: string;
@@ -18,7 +20,8 @@ export interface ResultLogTradeHistoryItem {
   currency: string;
   price: number;
   quantity: number;
-  symbol: string
+  symbol: string;
+  tradeType?: ResultLogTradeType;
 }
 
 export interface UserSummary {

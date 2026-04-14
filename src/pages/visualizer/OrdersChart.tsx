@@ -1,13 +1,58 @@
 import { SegmentedControl } from '@mantine/core';
 import Highcharts from 'highcharts';
 import { ReactNode, useState } from 'react';
-import { ProsperitySymbol } from '../../models.ts';
+import { ProsperitySymbol, ResultLogTradeType } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import { getAskColor, getBidColor } from '../../utils/colors.ts';
 import { Chart } from './Chart.tsx';
 
 export interface OrdersChartProps {
   symbol: ProsperitySymbol;
+}
+
+const rendererSymbols = Highcharts.SVGRenderer.prototype.symbols as Record<
+  string,
+  (x: number, y: number, w: number, h: number) => Highcharts.SVGPathArray
+>;
+
+if (rendererSymbols.star === undefined) {
+  rendererSymbols.star = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
+    const centerX = x + w / 2;
+    const centerY = y + h / 2;
+    const outerRadius = Math.min(w, h) / 2;
+    const innerRadius = outerRadius * 0.45;
+    const path: Highcharts.SVGPathArray = [];
+
+    for (let i = 0; i < 10; i++) {
+      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const px = centerX + radius * Math.cos(angle);
+      const py = centerY + radius * Math.sin(angle);
+      path.push([i === 0 ? 'M' : 'L', px, py]);
+    }
+
+    path.push(['Z']);
+    return path;
+  };
+}
+
+function getTradeCategory(tradeType?: ResultLogTradeType): 'maker' | 'taker' | 'other' {
+  if (tradeType === 'make') return 'maker';
+  if (tradeType === 'take' || tradeType === undefined) return 'taker';
+  return 'other';
+}
+
+function createSubmissionTradeTooltip(
+  side: 'Buy' | 'Sell',
+  category: 'maker' | 'taker',
+  glyph: string,
+): Highcharts.SeriesTooltipOptionsObject {
+  return {
+    pointFormatter(this: Highcharts.Point) {
+      const { quantity, buyer, seller } = (this as any).custom ?? {};
+      return `<span style="color:${this.color}">${glyph}</span> ${side} (${category}): <b>${this.y}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
+    },
+  };
 }
 
 export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
@@ -35,8 +80,10 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     if (row.askPrices.length >= 3) ask3Data.push([row.timestamp, row.askPrices[2]]);
   }
 
-  const filledBuyData: Highcharts.PointOptionsObject[] = [];
-  const filledSellData: Highcharts.PointOptionsObject[] = [];
+  const takerBuyData: Highcharts.PointOptionsObject[] = [];
+  const takerSellData: Highcharts.PointOptionsObject[] = [];
+  const makerBuyData: Highcharts.PointOptionsObject[] = [];
+  const makerSellData: Highcharts.PointOptionsObject[] = [];
   const otherTradeData: Highcharts.PointOptionsObject[] = [];
 
   for (const trade of algorithm.tradeHistory) {
@@ -45,13 +92,28 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     const point: Highcharts.PointOptionsObject = {
       x: trade.timestamp,
       y: trade.price,
-      custom: { quantity: trade.quantity, buyer: trade.buyer, seller: trade.seller },
+      custom: {
+        quantity: trade.quantity,
+        buyer: trade.buyer,
+        seller: trade.seller,
+        tradeType: trade.tradeType,
+      },
     };
 
+    const category = getTradeCategory(trade.tradeType);
+
     if (trade.buyer.includes('SUBMISSION')) {
-      filledBuyData.push(point);
+      if (category === 'maker') {
+        makerBuyData.push(point);
+      } else {
+        takerBuyData.push(point);
+      }
     } else if (trade.seller.includes('SUBMISSION')) {
-      filledSellData.push(point);
+      if (category === 'maker') {
+        makerSellData.push(point);
+      } else {
+        takerSellData.push(point);
+      }
     } else {
       otherTradeData.push(point);
     }
@@ -79,38 +141,24 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     }
   }
 
-  const filledBuyTooltip: Highcharts.SeriesTooltipOptionsObject = {
-    pointFormatter(this: Highcharts.Point) {
-      const { quantity, buyer, seller } = (this as any).custom ?? {};
-      return `<span style="color:${this.color}">▲</span> Buy (filled): <b>${this.y}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
-    },
-  };
-
-  const filledSellTooltip: Highcharts.SeriesTooltipOptionsObject = {
-    pointFormatter(this: Highcharts.Point) {
-      const { quantity, buyer, seller } = (this as any).custom ?? {};
-      return `<span style="color:${this.color}">▼</span> Sell (filled): <b>${this.y}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
-    },
-  };
-
   const unfilledBuyTooltip: Highcharts.SeriesTooltipOptionsObject = {
     pointFormatter(this: Highcharts.Point) {
       const qty = (this as any).custom?.quantity;
-      return `<span style="color:${this.color}">▲</span> Buy (order): <b>${this.y}</b> (qty: ${qty})<br/>`;
+      return `<span style="color:${this.color}">&#9679;</span> Buy (order): <b>${this.y}</b> (qty: ${qty})<br/>`;
     },
   };
 
   const unfilledSellTooltip: Highcharts.SeriesTooltipOptionsObject = {
     pointFormatter(this: Highcharts.Point) {
       const qty = (this as any).custom?.quantity;
-      return `<span style="color:${this.color}">▼</span> Sell (order): <b>${this.y}</b> (qty: ${qty})<br/>`;
+      return `<span style="color:${this.color}">&#9679;</span> Sell (order): <b>${this.y}</b> (qty: ${qty})<br/>`;
     },
   };
 
   const otherTradeTooltip: Highcharts.SeriesTooltipOptionsObject = {
     pointFormatter(this: Highcharts.Point) {
       const { quantity, buyer, seller } = (this as any).custom ?? {};
-      return `<span style="color:${this.color}">◆</span> Trade: <b>${this.y}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
+      return `<span style="color:${this.color}">&#9670;</span> Trade: <b>${this.y}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
     },
   };
 
@@ -182,48 +230,66 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     ...priceSeries,
     {
       type: 'scatter',
-      name: 'Buy (filled)',
-      color: getBidColor(1.0),
-      data: filledBuyData,
-      marker: { symbol: 'triangle', radius: 6 },
-      tooltip: filledBuyTooltip,
-      dataGrouping: { enabled: false },
-    },
-    {
-      type: 'scatter',
       name: 'Buy (order)',
       color: getBidColor(0.3),
       data: unfilledBuyData,
-      marker: { symbol: 'triangle', radius: 4 },
+      marker: { symbol: 'circle', radius: 4 },
       tooltip: unfilledBuyTooltip,
       dataGrouping: { enabled: false },
       visible: false,
     },
     {
       type: 'scatter',
-      name: 'Sell (filled)',
-      color: getAskColor(1.0),
-      data: filledSellData,
-      marker: { symbol: 'triangle-down', radius: 6 },
-      tooltip: filledSellTooltip,
-      dataGrouping: { enabled: false },
-    },
-    {
-      type: 'scatter',
       name: 'Sell (order)',
       color: getAskColor(0.3),
       data: unfilledSellData,
-      marker: { symbol: 'triangle-down', radius: 4 },
+      marker: { symbol: 'circle', radius: 4 },
       tooltip: unfilledSellTooltip,
       dataGrouping: { enabled: false },
       visible: false,
     },
     {
       type: 'scatter',
+      name: 'Buy (taker)',
+      color: getBidColor(1.0),
+      data: takerBuyData,
+      marker: { symbol: 'diamond', radius: 6 },
+      tooltip: createSubmissionTradeTooltip('Buy', 'taker', '&#9670;'),
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'scatter',
+      name: 'Sell (taker)',
+      color: getAskColor(1.0),
+      data: takerSellData,
+      marker: { symbol: 'diamond', radius: 6 },
+      tooltip: createSubmissionTradeTooltip('Sell', 'taker', '&#9670;'),
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'scatter',
+      name: 'Buy (maker)',
+      color: getBidColor(0.8),
+      data: makerBuyData,
+      marker: { symbol: 'star', radius: 7 },
+      tooltip: createSubmissionTradeTooltip('Buy', 'maker', '&#9733;'),
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'scatter',
+      name: 'Sell (maker)',
+      color: getAskColor(0.8),
+      data: makerSellData,
+      marker: { symbol: 'star', radius: 7 },
+      tooltip: createSubmissionTradeTooltip('Sell', 'maker', '&#9733;'),
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'scatter',
       name: 'Other trades',
       color: '#a855f7',
       data: otherTradeData,
-      marker: { symbol: 'diamond', radius: 6 },
+      marker: { symbol: 'diamond', radius: 5 },
       tooltip: otherTradeTooltip,
       dataGrouping: { enabled: false },
     },
