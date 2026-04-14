@@ -1,5 +1,5 @@
 import { SegmentedControl } from '@mantine/core';
-import Highcharts from 'highcharts';
+import Highcharts from 'highcharts/highstock';
 import { ReactNode, useState } from 'react';
 import { ProsperitySymbol, ResultLogTradeType } from '../../models.ts';
 import { useStore } from '../../store.ts';
