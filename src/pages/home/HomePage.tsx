@@ -6,6 +6,9 @@ import { LoadFromFile } from './LoadFromFile.tsx';
 import { LoadFromUrl } from './LoadFromUrl.tsx';
 
 export function HomePage(): ReactNode {
+  const sampleLogUrl = `${window.location.origin}${import.meta.env.BASE_URL}sample-logs/135303.log`;
+  const sampleVisualizerUrl = `${window.location.origin}${import.meta.env.BASE_URL}?open=${encodeURIComponent(sampleLogUrl)}`;
+
   const exampleCode = `
 import json
 from typing import Any
@@ -165,7 +168,7 @@ class Trader:
           <Text>
             IMC Prosperity 4 Visualizer is a visualizer for <Anchor href="https://prosperity.imc.com/" target="_blank" rel="noreferrer">IMC Prosperity 4</Anchor> algorithms.
             Its source code is available in the <Anchor href="https://github.com/matthewnapoli/imc-prosperity-4-visualizer" target="_blank" rel="noreferrer">matthewnapoli/imc-prosperity-4-visualizer</Anchor> GitHub repository.
-            Load an algorithm below to get started.
+            Load an algorithm below to get started, or try the included <Anchor href={sampleVisualizerUrl}>sample submission log</Anchor>.
           </Text>
         </HomeCard>
 

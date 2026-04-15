@@ -11,6 +11,13 @@ It is forked from the original IMC Prosperity 3 visualizer (https://jmerle.githu
 The deployed visualizer is available at:  
 https://matthewnapoli.github.io/imc-prosperity-4-visualizer/
 
+## Sample Log
+
+This repository includes a sample Prosperity log at [`public/sample-logs/135303.log`](public/sample-logs/135303.log).
+
+You can open it directly in the live visualizer here:  
+https://matthewnapoli.github.io/imc-prosperity-4-visualizer/?open=https%3A%2F%2Fmatthewnapoli.github.io%2Fimc-prosperity-4-visualizer%2Fsample-logs%2F135303.log
+
 ## 📌 Background
 
 This repository is forked from Kevin Fu's Prosperity 4 visualizer, which was forked from Jasper Merle's original Prosperity 3 visualizer.
