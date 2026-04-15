@@ -26,7 +26,6 @@ if (rendererSymbols.rightarrow === undefined) {
     const shaftTop = y + (h - shaftHeight) / 2;
     const shaftBottom = shaftTop + shaftHeight;
     const shaftEnd = x + w * 0.52;
-    const headBaseX = x + w * 0.52;
     const headTipX = x + w;
     const centerY = y + h / 2;
 
