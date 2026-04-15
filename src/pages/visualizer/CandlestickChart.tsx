@@ -80,10 +80,35 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
   } else if (viewMode === 'price') {
     title = `${symbol} - Price`;
     const priceSeries: Highcharts.SeriesOptionsType[] = [
-      { type: 'line', name: 'Bid 3', color: getBidColor(0.5), marker: { symbol: 'square' }, data: [] },
-      { type: 'line', name: 'Bid 2', color: getBidColor(0.75), marker: { symbol: 'circle' }, data: [] },
-      { type: 'line', name: 'Bid 1', color: getBidColor(1.0), marker: { symbol: 'triangle' }, data: [] },
-      { type: 'line', name: 'Mid price', color: 'gray', dashStyle: 'Dash', marker: { symbol: 'diamond' }, data: [] },
+      {
+        type: 'line',
+        name: 'Bid 3',
+        color: getBidColor(0.5),
+        marker: { enabled: false },
+        data: [],
+      },
+      {
+        type: 'line',
+        name: 'Bid 2',
+        color: getBidColor(0.75),
+        marker: { enabled: false },
+        data: [],
+      },
+      {
+        type: 'line',
+        name: 'Bid 1',
+        color: getBidColor(1.0),
+        marker: { enabled: false },
+        data: [],
+      },
+      {
+        type: 'line',
+        name: 'Mid price',
+        color: 'gray',
+        dashStyle: 'Dash',
+        marker: { enabled: false },
+        data: [],
+      },
       {
         type: 'scatter',
         name: 'Filled mid price',
@@ -92,9 +117,27 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         data: filledMidPriceData,
         dataGrouping: { enabled: false },
       },
-      { type: 'line', name: 'Ask 1', color: getAskColor(1.0), marker: { symbol: 'triangle-down' }, data: [] },
-      { type: 'line', name: 'Ask 2', color: getAskColor(0.75), marker: { symbol: 'circle' }, data: [] },
-      { type: 'line', name: 'Ask 3', color: getAskColor(0.5), marker: { symbol: 'square' }, data: [] },
+      {
+        type: 'line',
+        name: 'Ask 1',
+        color: getAskColor(1.0),
+        marker: { enabled: false },
+        data: [],
+      },
+      {
+        type: 'line',
+        name: 'Ask 2',
+        color: getAskColor(0.75),
+        marker: { enabled: false },
+        data: [],
+      },
+      {
+        type: 'line',
+        name: 'Ask 3',
+        color: getAskColor(0.5),
+        marker: { enabled: false },
+        data: [],
+      },
     ];
 
     for (const row of rows) {

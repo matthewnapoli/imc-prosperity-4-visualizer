@@ -176,7 +176,7 @@ export function Chart({ title, options, series, min, max, controls }: ChartProps
         },
       },
       xAxis: {
-        type: 'datetime',
+        type: 'linear',
         title: {
           text: 'Timestamp',
         },

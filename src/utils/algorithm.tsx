@@ -45,48 +45,45 @@ function getColumnValues(columns: string[], indices: number[]): number[] {
 }
 
 function getActivityLogs(logLines: string): ActivityLogRow[] {
-  // const headerIndex = logLines.indexOf('Activities log:');
-  // if (headerIndex === -1) {
-  //   return [];
-  // }
   const lines = logLines.split('\n');
   const rows: ActivityLogRow[] = [];
   const previousMidPrices: Record<string, number | undefined> = {};
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-    if (line === '') {
-      break;
-    }
+    if (line === '') break;
 
     const columns = line.split(';');
+    const product = columns[2];
 
-    const loggedMidPrice = Number(columns[15]);
-    const previousMidPrice = previousMidPrices[columns[2]];
-    const shouldFillMidPrice = loggedMidPrice === 0 && previousMidPrice !== undefined;
-    const midPrice = shouldFillMidPrice ? previousMidPrice : loggedMidPrice;
+    const rawMid = columns[15]?.trim();
+    const parsedMid = rawMid === '' ? NaN : Number(rawMid);
+    const previousMidPrice = previousMidPrices[product];
+
+    const missingMid = !Number.isFinite(parsedMid) || parsedMid === 0;
+    const shouldFillMidPrice = missingMid && previousMidPrice !== undefined;
+    const midPrice = shouldFillMidPrice ? previousMidPrice : parsedMid;
 
     rows.push({
       day: Number(columns[0]),
       timestamp: Number(columns[1]),
-      product: columns[2],
+      product,
       bidPrices: getColumnValues(columns, [3, 5, 7]),
       bidVolumes: getColumnValues(columns, [4, 6, 8]),
       askPrices: getColumnValues(columns, [9, 11, 13]),
       askVolumes: getColumnValues(columns, [10, 12, 14]),
-      midPrice,
+      midPrice: Number.isFinite(midPrice) ? midPrice : 0,
       isFilledMidPrice: shouldFillMidPrice,
       profitLoss: Number(columns[16]),
     });
 
-    if (midPrice !== 0) {
-      previousMidPrices[columns[2]] = midPrice;
+    if (Number.isFinite(midPrice) && midPrice !== 0) {
+      previousMidPrices[product] = midPrice;
     }
   }
 
   return rows;
 }
-
 function decompressListings(compressed: CompressedListing[]): Record<ProsperitySymbol, Listing> {
   const listings: Record<ProsperitySymbol, Listing> = {};
 
