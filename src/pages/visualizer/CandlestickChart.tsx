@@ -1,6 +1,6 @@
 import { Group, SegmentedControl, Select } from '@mantine/core';
 import Highcharts from 'highcharts';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { ProsperitySymbol } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import { getAskColor, getBidColor } from '../../utils/colors.ts';
