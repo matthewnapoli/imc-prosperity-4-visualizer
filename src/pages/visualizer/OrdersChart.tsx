@@ -4,11 +4,14 @@ import { ReactNode, useState } from 'react';
 import { ProsperitySymbol, ResultLogTradeType } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import { getAskColor, getBidColor } from '../../utils/colors.ts';
+import { formatNumber } from '../../utils/format.ts';
 import { Chart } from './Chart.tsx';
 
 export interface OrdersChartProps {
   symbol: ProsperitySymbol;
 }
+
+type OrdersChartMode = 'mid' | 'bidask' | 'volume';
 
 function getTradeCategory(tradeType?: ResultLogTradeType): 'maker' | 'taker' | 'other' {
   if (tradeType === 'make') return 'maker';
@@ -29,18 +32,83 @@ function createSubmissionTradeTooltip(
   };
 }
 
+function formatScatterTooltipLine(
+  name: string,
+  color: string,
+  glyph: string,
+  point: Highcharts.PointOptionsObject,
+): string | null {
+  const x = Number(point.x);
+  const y = Number(point.y);
+  if (Number.isNaN(x) || Number.isNaN(y)) {
+    return null;
+  }
+
+  const custom = (point as any).custom ?? {};
+  const quantity = custom.quantity;
+  const buyer = custom.buyer ?? '';
+  const seller = custom.seller ?? '';
+
+  if (name === 'Buy (order)' || name === 'Sell (order)') {
+    return `<span style="color:${color}">${glyph}</span> ${name}: <b>${formatNumber(y)}</b> (qty: ${quantity})<br/>`;
+  }
+
+  if (name === 'Filled mid price') {
+    return `<span style="color:${color}">${glyph}</span> Filled mid price: <b>${formatNumber(y)}</b><br/>`;
+  }
+
+  return `<span style="color:${color}">${glyph}</span> ${name}: <b>${formatNumber(y)}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
+}
+
+function addScatterTooltipLines(
+  linesByTimestamp: Map<number, string[]>,
+  points: Highcharts.PointOptionsObject[],
+  name: string,
+  color: string,
+  glyph: string,
+): void {
+  for (const point of points) {
+    const x = Number(point.x);
+    if (Number.isNaN(x)) {
+      continue;
+    }
+
+    const line = formatScatterTooltipLine(name, color, glyph, point);
+    if (line === null) {
+      continue;
+    }
+
+    const lines = linesByTimestamp.get(x) ?? [];
+    lines.push(line);
+    linesByTimestamp.set(x, lines);
+  }
+}
+
 export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
   const algorithm = useStore(state => state.algorithm)!;
-  const [priceMode, setPriceMode] = useState<'mid' | 'bidask'>('bidask');
+  const [priceMode, setPriceMode] = useState<OrdersChartMode>('bidask');
+  const buyOrderColor = getBidColor(0.3);
+  const sellOrderColor = getAskColor(0.3);
+  const takerBuyColor = getBidColor(1.0);
+  const takerSellColor = getAskColor(1.0);
+  const makerBuyColor = getBidColor(0.8);
+  const makerSellColor = getAskColor(0.8);
+  const otherTradeColor = '#a855f7';
 
   const midPriceData: [number, number][] = [];
   const filledMidPriceData: [number, number][] = [];
   const bid1Data: [number, number][] = [];
   const bid2Data: [number, number][] = [];
   const bid3Data: [number, number][] = [];
+  const bid1VolumeData: [number, number][] = [];
+  const bid2VolumeData: [number, number][] = [];
+  const bid3VolumeData: [number, number][] = [];
   const ask1Data: [number, number][] = [];
   const ask2Data: [number, number][] = [];
   const ask3Data: [number, number][] = [];
+  const ask1VolumeData: [number, number][] = [];
+  const ask2VolumeData: [number, number][] = [];
+  const ask3VolumeData: [number, number][] = [];
 
   for (const row of algorithm.activityLogs) {
     if (row.product !== symbol) continue;
@@ -53,9 +121,15 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     if (row.bidPrices.length >= 1) bid1Data.push([row.timestamp, row.bidPrices[0]]);
     if (row.bidPrices.length >= 2) bid2Data.push([row.timestamp, row.bidPrices[1]]);
     if (row.bidPrices.length >= 3) bid3Data.push([row.timestamp, row.bidPrices[2]]);
+    if (row.bidVolumes.length >= 1) bid1VolumeData.push([row.timestamp, row.bidVolumes[0]]);
+    if (row.bidVolumes.length >= 2) bid2VolumeData.push([row.timestamp, row.bidVolumes[1]]);
+    if (row.bidVolumes.length >= 3) bid3VolumeData.push([row.timestamp, row.bidVolumes[2]]);
     if (row.askPrices.length >= 1) ask1Data.push([row.timestamp, row.askPrices[0]]);
     if (row.askPrices.length >= 2) ask2Data.push([row.timestamp, row.askPrices[1]]);
     if (row.askPrices.length >= 3) ask3Data.push([row.timestamp, row.askPrices[2]]);
+    if (row.askVolumes.length >= 1) ask1VolumeData.push([row.timestamp, row.askVolumes[0]]);
+    if (row.askVolumes.length >= 2) ask2VolumeData.push([row.timestamp, row.askVolumes[1]]);
+    if (row.askVolumes.length >= 3) ask3VolumeData.push([row.timestamp, row.askVolumes[2]]);
   }
 
   const takerBuyData: Highcharts.PointOptionsObject[] = [];
@@ -150,7 +224,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             dashStyle: 'Dash',
             data: midPriceData,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'scatter',
@@ -168,7 +242,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getBidColor(0.5),
             data: bid3Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'line',
@@ -176,7 +250,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getBidColor(0.75),
             data: bid2Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'line',
@@ -184,7 +258,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getBidColor(1.0),
             data: bid1Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'line',
@@ -192,7 +266,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getAskColor(1.0),
             data: ask1Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'line',
@@ -200,7 +274,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getAskColor(0.75),
             data: ask2Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
           {
             type: 'line',
@@ -208,90 +282,190 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             color: getAskColor(0.5),
             data: ask3Data,
             marker: { enabled: false },
-            enableMouseTracking: false,
+            dataGrouping: { enabled: false },
           },
         ];
 
-  const series: Highcharts.SeriesOptionsType[] = [
-    ...priceSeries,
+  const volumeSeries: Highcharts.SeriesOptionsType[] = [
     {
-      type: 'scatter',
-      name: 'Buy (order)',
-      color: getBidColor(0.3),
-      data: unfilledBuyData,
-      marker: { symbol: 'circle', radius: 4 },
-      tooltip: unfilledBuyTooltip,
+      type: 'column',
+      name: 'Bid 3',
+      color: getBidColor(0.5),
+      data: bid3VolumeData,
       dataGrouping: { enabled: false },
-      visible: false,
     },
     {
-      type: 'scatter',
-      name: 'Sell (order)',
-      color: getAskColor(0.3),
-      data: unfilledSellData,
-      marker: { symbol: 'circle', radius: 4 },
-      tooltip: unfilledSellTooltip,
+      type: 'column',
+      name: 'Bid 2',
+      color: getBidColor(0.75),
+      data: bid2VolumeData,
       dataGrouping: { enabled: false },
-      visible: false,
     },
     {
-      type: 'scatter',
-      name: 'Buy (taker)',
+      type: 'column',
+      name: 'Bid 1',
       color: getBidColor(1.0),
-      data: takerBuyData,
-      marker: { symbol: 'diamond', radius: 6 },
-      tooltip: createSubmissionTradeTooltip('Buy', 'taker', '&#9670;'),
+      data: bid1VolumeData,
       dataGrouping: { enabled: false },
     },
     {
-      type: 'scatter',
-      name: 'Sell (taker)',
+      type: 'column',
+      name: 'Ask 1',
       color: getAskColor(1.0),
-      data: takerSellData,
-      marker: { symbol: 'diamond', radius: 6 },
-      tooltip: createSubmissionTradeTooltip('Sell', 'taker', '&#9670;'),
+      data: ask1VolumeData,
       dataGrouping: { enabled: false },
     },
     {
-      type: 'scatter',
-      name: 'Buy (maker)',
-      color: getBidColor(0.8),
-      data: makerBuyData,
-      marker: { symbol: 'star', radius: 7 },
-      tooltip: createSubmissionTradeTooltip('Buy', 'maker', '&#9733;'),
+      type: 'column',
+      name: 'Ask 2',
+      color: getAskColor(0.75),
+      data: ask2VolumeData,
       dataGrouping: { enabled: false },
     },
     {
-      type: 'scatter',
-      name: 'Sell (maker)',
-      color: getAskColor(0.8),
-      data: makerSellData,
-      marker: { symbol: 'star', radius: 7 },
-      tooltip: createSubmissionTradeTooltip('Sell', 'maker', '&#9733;'),
-      dataGrouping: { enabled: false },
-    },
-    {
-      type: 'scatter',
-      name: 'Other trades',
-      color: '#a855f7',
-      data: otherTradeData,
-      marker: { symbol: 'circle', radius: 5 },
-      tooltip: otherTradeTooltip,
+      type: 'column',
+      name: 'Ask 3',
+      color: getAskColor(0.5),
+      data: ask3VolumeData,
       dataGrouping: { enabled: false },
     },
   ];
+
+  const series: Highcharts.SeriesOptionsType[] =
+    priceMode === 'volume'
+      ? volumeSeries
+      : [
+          ...priceSeries,
+          {
+            type: 'scatter',
+            name: 'Buy (order)',
+            color: buyOrderColor,
+            data: unfilledBuyData,
+            marker: { symbol: 'circle', radius: 4 },
+            tooltip: unfilledBuyTooltip,
+            dataGrouping: { enabled: false },
+            visible: false,
+          },
+          {
+            type: 'scatter',
+            name: 'Sell (order)',
+            color: sellOrderColor,
+            data: unfilledSellData,
+            marker: { symbol: 'circle', radius: 4 },
+            tooltip: unfilledSellTooltip,
+            dataGrouping: { enabled: false },
+            visible: false,
+          },
+          {
+            type: 'scatter',
+            name: 'Buy (taker)',
+            color: takerBuyColor,
+            data: takerBuyData,
+            marker: { symbol: 'diamond', radius: 6 },
+            tooltip: createSubmissionTradeTooltip('Buy', 'taker', '&#9670;'),
+            dataGrouping: { enabled: false },
+          },
+          {
+            type: 'scatter',
+            name: 'Sell (taker)',
+            color: takerSellColor,
+            data: takerSellData,
+            marker: { symbol: 'diamond', radius: 6 },
+            tooltip: createSubmissionTradeTooltip('Sell', 'taker', '&#9670;'),
+            dataGrouping: { enabled: false },
+          },
+          {
+            type: 'scatter',
+            name: 'Buy (maker)',
+            color: makerBuyColor,
+            data: makerBuyData,
+            marker: { symbol: 'star', radius: 7 },
+            tooltip: createSubmissionTradeTooltip('Buy', 'maker', '&#9733;'),
+            dataGrouping: { enabled: false },
+          },
+          {
+            type: 'scatter',
+            name: 'Sell (maker)',
+            color: makerSellColor,
+            data: makerSellData,
+            marker: { symbol: 'star', radius: 7 },
+            tooltip: createSubmissionTradeTooltip('Sell', 'maker', '&#9733;'),
+            dataGrouping: { enabled: false },
+          },
+          {
+            type: 'scatter',
+            name: 'Other trades',
+            color: otherTradeColor,
+            data: otherTradeData,
+            marker: { symbol: 'circle', radius: 5 },
+            tooltip: otherTradeTooltip,
+            dataGrouping: { enabled: false },
+          },
+        ];
+
+  const scatterTooltipLinesByTimestamp = new Map<number, string[]>();
+  if (priceMode !== 'volume') {
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, filledMidPriceData, 'Filled mid price', '#9ca3af', '&#9654;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, unfilledBuyData, 'Buy (order)', buyOrderColor, '&#9679;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, unfilledSellData, 'Sell (order)', sellOrderColor, '&#9679;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, takerBuyData, 'Buy (taker)', takerBuyColor, '&#9670;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, takerSellData, 'Sell (taker)', takerSellColor, '&#9670;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, makerBuyData, 'Buy (maker)', makerBuyColor, '&#9733;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, makerSellData, 'Sell (maker)', makerSellColor, '&#9733;');
+    addScatterTooltipLines(scatterTooltipLinesByTimestamp, otherTradeData, 'Other trades', otherTradeColor, '&#9679;');
+  }
+
+  const options: Highcharts.Options =
+    priceMode === 'volume'
+      ? {}
+      : {
+          tooltip: {
+            shared: true,
+            split: false,
+            formatter: function () {
+              const points = this.points ?? (this.point ? [this.point] : []);
+              const plottedSeriesNames = new Set([
+                'Mid price',
+                'Filled mid price',
+                'Bid 1',
+                'Bid 2',
+                'Bid 3',
+                'Ask 1',
+                'Ask 2',
+                'Ask 3',
+              ]);
+
+              const plottedPoints = points.filter(point => plottedSeriesNames.has(point.series.name));
+              const plottedLines = plottedPoints
+                .map(
+                  point =>
+                    `<span style="color:${point.color}">&#9679;</span> ${point.series.name}: <b>${formatNumber(
+                      Number(point.y),
+                    )}</b><br/>`,
+                )
+                .join('');
+
+              const hoverDetails = scatterTooltipLinesByTimestamp.get(Number(this.x))?.join('') ?? '';
+
+              return `Timestamp ${formatNumber(Number(this.x))}<br/>${plottedLines}${hoverDetails}`;
+            },
+          },
+        };
 
   const controls = (
     <SegmentedControl
       size="xs"
       value={priceMode}
-      onChange={value => setPriceMode(value as 'mid' | 'bidask')}
+      onChange={value => setPriceMode(value as OrdersChartMode)}
       data={[
         { label: 'Mid Price', value: 'mid' },
         { label: 'Bid/Ask', value: 'bidask' },
+        { label: 'Volume', value: 'volume' },
       ]}
     />
   );
 
-  return <Chart title={`${symbol} - Order Book`} series={series} controls={controls} />;
+  const title = priceMode === 'volume' ? `${symbol} - Volume` : `${symbol} - Order Book`;
+
+  return <Chart title={title} series={series} controls={controls} options={options} />;
 }

@@ -4,7 +4,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../store.ts';
 import { formatNumber } from '../../utils/format.ts';
 import { AlgorithmSummaryCard } from './AlgorithmSummaryCard.tsx';
-import { CandlestickChart } from './CandlestickChart.tsx';
 import { ConversionPriceChart } from './ConversionPriceChart.tsx';
 import { EnvironmentChart } from './EnvironmentChart.tsx';
 import { OrdersChart } from './OrdersChart.tsx';
@@ -58,13 +57,7 @@ export function VisualizerPage(): ReactNode {
   const symbolColumns: ReactNode[] = [];
   sortedSymbols.forEach(symbol => {
     symbolColumns.push(
-      <Grid.Col key={`${symbol} - candlestick`} span={{ xs: 12, sm: 6 }}>
-        <CandlestickChart symbol={symbol} />
-      </Grid.Col>,
-    );
-
-    symbolColumns.push(
-      <Grid.Col key={`${symbol} - orders`} span={{ xs: 12, sm: 6 }}>
+      <Grid.Col key={`${symbol} - orders`} span={12}>
         <OrdersChart symbol={symbol} />
       </Grid.Col>,
     );
@@ -90,8 +83,6 @@ export function VisualizerPage(): ReactNode {
         <EnvironmentChart symbol={symbol} />
       </Grid.Col>,
     );
-
-    symbolColumns.push(<Grid.Col key={`${symbol} - environment`} span={{ xs: 12, sm: 6 }} />);
   });
 
   sortedPlainValueObservationSymbols.forEach(symbol => {
