@@ -157,35 +157,23 @@ export function Chart({ title, options, series, min, max, controls }: ChartProps
       credits: {
         href: 'javascript:window.open("https://www.highcharts.com/?credits", "_blank")',
       },
-      plotOptions: {
-        series: {
-          dataGrouping: {
-            approximation(this: any, values: number[]): number {
-              const endIndex = this.dataGroupInfo.start + this.dataGroupInfo.length;
-              if (endIndex < this.xData.length) {
-                return values[0];
-              } else {
-                return values[values.length - 1];
-              }
-            },
-            anchor: 'start',
-            firstAnchor: 'firstPoint',
-            lastAnchor: 'lastPoint',
-            units: [['second', [1, 2, 5, 10]]],
-          },
+      xAxis: {
+      type: 'linear',
+      ordinal: false,
+      startOnTick: false,
+      endOnTick: false,
+      minRange: 1,
+      title: {
+        text: 'Timestamp',
+      },
+      crosshair: {
+        width: 1,
+      },
+      labels: {
+        formatter() {
+          return formatNumber(this.value as number);
         },
       },
-      xAxis: {
-        type: 'linear',
-        title: {
-          text: 'Timestamp',
-        },
-        crosshair: {
-          width: 1,
-        },
-        labels: {
-          formatter: params => formatNumber(params.value as number),
-        },
       },
       yAxis: {
         opposite: false,
@@ -224,7 +212,7 @@ export function Chart({ title, options, series, min, max, controls }: ChartProps
           {controls}
         </Box>
       )}
-      <HighchartsReact highcharts={Highcharts} constructorType={'stockChart'} options={fullOptions} immutable />
+      <HighchartsReact highcharts={Highcharts} constructorType={'chart'} options={fullOptions} immutable />
     </VisualizerCard>
   );
 }

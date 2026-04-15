@@ -1,9 +1,10 @@
 import { Group, SegmentedControl, Select } from '@mantine/core';
 import Highcharts from 'highcharts';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { ProsperitySymbol } from '../../models.ts';
 import { useStore } from '../../store.ts';
 import { getAskColor, getBidColor } from '../../utils/colors.ts';
+import { formatNumber } from '../../utils/format.ts';
 import { Chart } from './Chart.tsx';
 
 export interface CandlestickChartProps {
@@ -34,11 +35,13 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
   const filledMidPriceData: [number, number][] = rows
     .filter(row => row.isFilledMidPrice)
     .map(row => [row.timestamp, row.midPrice]);
+
   const [groupSize, setGroupSize] = useState(() => defaultGroupSize(rows.length));
-  const size = parseInt(groupSize);
+  const size = parseInt(groupSize, 10);
 
   let series: Highcharts.SeriesOptionsType[] = [];
   let title = '';
+  let options: Highcharts.Options | undefined;
 
   if (viewMode === 'movement') {
     title = `${symbol} - Price Movement`;
@@ -79,12 +82,14 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
     ];
   } else if (viewMode === 'price') {
     title = `${symbol} - Price`;
+
     const priceSeries: Highcharts.SeriesOptionsType[] = [
       {
         type: 'line',
         name: 'Bid 3',
         color: getBidColor(0.5),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -92,6 +97,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         name: 'Bid 2',
         color: getBidColor(0.75),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -99,6 +105,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         name: 'Bid 1',
         color: getBidColor(1.0),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -107,6 +114,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         color: 'gray',
         dashStyle: 'Dash',
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -122,6 +130,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         name: 'Ask 1',
         color: getAskColor(1.0),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -129,6 +138,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         name: 'Ask 2',
         color: getAskColor(0.75),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
       {
@@ -136,21 +146,56 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         name: 'Ask 3',
         color: getAskColor(0.5),
         marker: { enabled: false },
+        dataGrouping: { enabled: false },
         data: [],
       },
     ];
 
     for (const row of rows) {
       for (let i = 0; i < row.bidPrices.length; i++) {
-        (priceSeries[2 - i] as any).data.push([row.timestamp, row.bidPrices[i]]);
+        (priceSeries[2 - i] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.bidPrices[i]]);
       }
-      (priceSeries[3] as any).data.push([row.timestamp, row.midPrice]);
+      (priceSeries[3] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.midPrice]);
       for (let i = 0; i < row.askPrices.length; i++) {
-        (priceSeries[i + 5] as any).data.push([row.timestamp, row.askPrices[i]]);
+        (priceSeries[i + 5] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.askPrices[i]]);
       }
     }
 
     series = priceSeries;
+
+    options = {
+      tooltip: {
+        shared: true,
+        split: false,
+        formatter: function () {
+          const points = this.points ?? (this.point ? [this.point] : []);
+          if (points.length === 0) return false;
+
+          const filledPoint = points.find(point => point.series.name === 'Filled mid price');
+
+          if (filledPoint) {
+            return (
+              `Timestamp ${formatNumber(Number(this.x))}<br/>` +
+              `<span style="color:${filledPoint.color}">&#9654;</span> Filled mid price: <b>${formatNumber(
+                Number(filledPoint.y),
+              )}</b><br/>`
+            );
+          }
+
+          return (
+            `Timestamp ${formatNumber(Number(this.x))}<br/>` +
+            points
+              .map(
+                point =>
+                  `<span style="color:${point.color}">&#9679;</span> ${point.series.name}: <b>${formatNumber(
+                    Number(point.y),
+                  )}</b><br/>`,
+              )
+              .join('')
+          );
+        },
+      },
+    };
   } else {
     title = `${symbol} - Volume`;
     const volumeSeries: Highcharts.SeriesOptionsType[] = [
@@ -164,10 +209,10 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
 
     for (const row of rows) {
       for (let i = 0; i < row.bidVolumes.length; i++) {
-        (volumeSeries[2 - i] as any).data.push([row.timestamp, row.bidVolumes[i]]);
+        (volumeSeries[2 - i] as Highcharts.SeriesColumnOptions).data!.push([row.timestamp, row.bidVolumes[i]]);
       }
       for (let i = 0; i < row.askVolumes.length; i++) {
-        (volumeSeries[i + 3] as any).data.push([row.timestamp, row.askVolumes[i]]);
+        (volumeSeries[i + 3] as Highcharts.SeriesColumnOptions).data!.push([row.timestamp, row.askVolumes[i]]);
       }
     }
 
@@ -199,5 +244,5 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
     </Group>
   );
 
-  return <Chart title={title} series={series} controls={controls} />;
+  return <Chart title={title} series={series} controls={controls} options={options} />;
 }
