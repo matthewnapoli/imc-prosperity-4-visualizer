@@ -61,6 +61,7 @@ export interface ActivityLogRow {
   midPrice: number;
   isFilledMidPrice?: boolean;
   profitLoss: number;
+  isFilledProfitLoss?: boolean;
 }
 
 export interface Listing {

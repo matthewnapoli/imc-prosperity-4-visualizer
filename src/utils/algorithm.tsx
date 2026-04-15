@@ -48,6 +48,7 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
   const lines = logLines.split('\n');
   const rows: ActivityLogRow[] = [];
   const previousMidPrices: Record<string, number | undefined> = {};
+  const previousProfitLosses: Record<string, number | undefined> = {};
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -55,6 +56,10 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
 
     const columns = line.split(';');
     const product = columns[2];
+    const bidPrices = getColumnValues(columns, [3, 5, 7]);
+    const bidVolumes = getColumnValues(columns, [4, 6, 8]);
+    const askPrices = getColumnValues(columns, [9, 11, 13]);
+    const askVolumes = getColumnValues(columns, [10, 12, 14]);
 
     const rawMid = columns[15]?.trim();
     const parsedMid = rawMid === '' ? NaN : Number(rawMid);
@@ -64,21 +69,33 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
     const shouldFillMidPrice = missingMid && previousMidPrice !== undefined;
     const midPrice = shouldFillMidPrice ? previousMidPrice : parsedMid;
 
+    const rawProfitLoss = columns[16]?.trim();
+    const parsedProfitLoss = rawProfitLoss === '' ? NaN : Number(rawProfitLoss);
+    const previousProfitLoss = previousProfitLosses[product];
+    const hasEmptyBook = bidPrices.length === 0 && askPrices.length === 0;
+    const shouldFillProfitLoss = missingMid && hasEmptyBook && previousProfitLoss !== undefined;
+    const profitLoss = shouldFillProfitLoss ? previousProfitLoss : parsedProfitLoss;
+
     rows.push({
       day: Number(columns[0]),
       timestamp: Number(columns[1]),
       product,
-      bidPrices: getColumnValues(columns, [3, 5, 7]),
-      bidVolumes: getColumnValues(columns, [4, 6, 8]),
-      askPrices: getColumnValues(columns, [9, 11, 13]),
-      askVolumes: getColumnValues(columns, [10, 12, 14]),
+      bidPrices,
+      bidVolumes,
+      askPrices,
+      askVolumes,
       midPrice: Number.isFinite(midPrice) ? midPrice : 0,
       isFilledMidPrice: shouldFillMidPrice,
-      profitLoss: Number(columns[16]),
+      profitLoss: Number.isFinite(profitLoss) ? profitLoss : 0,
+      isFilledProfitLoss: shouldFillProfitLoss,
     });
 
     if (Number.isFinite(midPrice) && midPrice !== 0) {
       previousMidPrices[product] = midPrice;
+    }
+
+    if (Number.isFinite(profitLoss)) {
+      previousProfitLosses[product] = profitLoss;
     }
   }
 
