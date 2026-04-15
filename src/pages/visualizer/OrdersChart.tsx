@@ -11,7 +11,7 @@ export interface OrdersChartProps {
   symbol: ProsperitySymbol;
 }
 
-type OrdersChartMode = 'mid' | 'bidask' | 'volume';
+type OrdersChartMode = 'bidask' | 'volume';
 
 function getTradeCategory(tradeType?: ResultLogTradeType): 'maker' | 'taker' | 'other' {
   if (tradeType === 'make') return 'maker';
@@ -214,77 +214,73 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     },
   };
 
-  const priceSeries: Highcharts.SeriesOptionsType[] =
-    priceMode === 'mid'
-      ? [
-          {
-            type: 'line',
-            name: 'Mid price',
-            color: 'gray',
-            dashStyle: 'Dash',
-            data: midPriceData,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'scatter',
-            name: 'Filled mid price',
-            color: '#9ca3af',
-            data: filledMidPriceData,
-            marker: { symbol: 'rightarrow', radius: 7 },
-            dataGrouping: { enabled: false },
-          },
-        ]
-      : [
-          {
-            type: 'line',
-            name: 'Bid 3',
-            color: getBidColor(0.5),
-            data: bid3Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'line',
-            name: 'Bid 2',
-            color: getBidColor(0.75),
-            data: bid2Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'line',
-            name: 'Bid 1',
-            color: getBidColor(1.0),
-            data: bid1Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'line',
-            name: 'Ask 1',
-            color: getAskColor(1.0),
-            data: ask1Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'line',
-            name: 'Ask 2',
-            color: getAskColor(0.75),
-            data: ask2Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-          {
-            type: 'line',
-            name: 'Ask 3',
-            color: getAskColor(0.5),
-            data: ask3Data,
-            marker: { enabled: false },
-            dataGrouping: { enabled: false },
-          },
-        ];
+  const priceSeries: Highcharts.SeriesOptionsType[] = [
+    {
+      type: 'line',
+      name: 'Bid 3',
+      color: getBidColor(0.5),
+      data: bid3Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Bid 2',
+      color: getBidColor(0.75),
+      data: bid2Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Bid 1',
+      color: getBidColor(1.0),
+      data: bid1Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Mid price',
+      color: 'gray',
+      dashStyle: 'Dash',
+      data: midPriceData,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'scatter',
+      name: 'Filled mid price',
+      color: '#9ca3af',
+      data: filledMidPriceData,
+      marker: { symbol: 'rightarrow', radius: 7 },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Ask 1',
+      color: getAskColor(1.0),
+      data: ask1Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Ask 2',
+      color: getAskColor(0.75),
+      data: ask2Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+    {
+      type: 'line',
+      name: 'Ask 3',
+      color: getAskColor(0.5),
+      data: ask3Data,
+      marker: { enabled: false },
+      dataGrouping: { enabled: false },
+    },
+  ];
 
   const volumeSeries: Highcharts.SeriesOptionsType[] = [
     {
@@ -426,7 +422,6 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
               const points = this.points ?? (this.point ? [this.point] : []);
               const plottedSeriesNames = new Set([
                 'Mid price',
-                'Filled mid price',
                 'Bid 1',
                 'Bid 2',
                 'Bid 3',
@@ -458,7 +453,6 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
       value={priceMode}
       onChange={value => setPriceMode(value as OrdersChartMode)}
       data={[
-        { label: 'Mid Price', value: 'mid' },
         { label: 'Bid/Ask', value: 'bidask' },
         { label: 'Volume', value: 'volume' },
       ]}
