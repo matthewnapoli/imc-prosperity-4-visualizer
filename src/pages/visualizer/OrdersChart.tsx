@@ -157,7 +157,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             name: 'Filled mid price',
             color: '#9ca3af',
             data: filledMidPriceData,
-            marker: { symbol: 'star', radius: 6 },
+            marker: { symbol: 'rightarrow', radius: 7 },
             dataGrouping: { enabled: false },
           },
         ]

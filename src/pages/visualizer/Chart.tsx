@@ -20,24 +20,26 @@ const rendererSymbols = Highcharts.SVGRenderer.prototype.symbols as Record<
   (x: number, y: number, w: number, h: number) => Highcharts.SVGPathArray
 >;
 
-if (rendererSymbols.star === undefined) {
-  rendererSymbols.star = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
-    const centerX = x + w / 2;
+if (rendererSymbols.rightarrow === undefined) {
+  rendererSymbols.rightarrow = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
+    const shaftHeight = h * 0.42;
+    const shaftTop = y + (h - shaftHeight) / 2;
+    const shaftBottom = shaftTop + shaftHeight;
+    const shaftEnd = x + w * 0.52;
+    const headBaseX = x + w * 0.52;
+    const headTipX = x + w;
     const centerY = y + h / 2;
-    const outerRadius = Math.min(w, h) / 2;
-    const innerRadius = outerRadius * 0.45;
-    const path: Highcharts.SVGPathArray = [];
 
-    for (let i = 0; i < 10; i++) {
-      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
-      const radius = i % 2 === 0 ? outerRadius : innerRadius;
-      const px = centerX + radius * Math.cos(angle);
-      const py = centerY + radius * Math.sin(angle);
-      path.push([i === 0 ? 'M' : 'L', px, py]);
-    }
-
-    path.push(['Z']);
-    return path;
+    return [
+      ['M', x, shaftTop],
+      ['L', shaftEnd, shaftTop],
+      ['L', shaftEnd, y],
+      ['L', headTipX, centerY],
+      ['L', shaftEnd, y + h],
+      ['L', shaftEnd, shaftBottom],
+      ['L', x, shaftBottom],
+      ['Z'],
+    ];
   };
 }
 
