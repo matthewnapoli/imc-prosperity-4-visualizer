@@ -31,6 +31,51 @@ export class AlgorithmParseError extends Error {
   }
 }
 
+const activityLogHeaders = [
+  'day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;fair_value;profit_and_loss',
+  'day;timestamp;product;bid_price_1;bid_volume_1;bid_price_2;bid_volume_2;bid_price_3;bid_volume_3;ask_price_1;ask_volume_1;ask_price_2;ask_volume_2;ask_price_3;ask_volume_3;mid_price;profit_and_loss',
+];
+
+function normalizeActivitiesLog(activitiesLog: string): string {
+  const normalized = activitiesLog.replace(/\r\n/g, '\n');
+
+  for (const header of activityLogHeaders) {
+    if (!normalized.startsWith(header)) {
+      continue;
+    }
+
+    const headerSuffix = normalized.charAt(header.length);
+    if (headerSuffix === '' || headerSuffix === '\n') {
+      return normalized;
+    }
+
+    // Some backtest-generated submission.log files omit the newline between the
+    // CSV header and the first data row.
+    return `${header}\n${normalized.slice(header.length)}`;
+  }
+
+  return normalized;
+}
+
+function getColumnIndex(headers: string[], preferred: string, fallback: string): number {
+  const preferredIndex = headers.indexOf(preferred);
+  if (preferredIndex !== -1) {
+    return preferredIndex;
+  }
+
+  const fallbackIndex = headers.indexOf(fallback);
+  if (fallbackIndex !== -1) {
+    return fallbackIndex;
+  }
+
+  return -1;
+}
+
+function getActivityPriceLabel(logLines: string): string {
+  const headers = logLines.split('\n')[0]?.split(';') ?? [];
+  return headers.includes('fair_value') ? 'Pre-comp FV' : 'Mid price';
+}
+
 function getColumnValues(columns: string[], indices: number[]): number[] {
   const values: number[] = [];
 
@@ -49,6 +94,9 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
   const rows: ActivityLogRow[] = [];
   const previousMidPrices: Record<string, number | undefined> = {};
   const previousProfitLosses: Record<string, number | undefined> = {};
+  const headers = lines[0]?.split(';') ?? [];
+  const fairValueIndex = getColumnIndex(headers, 'fair_value', 'mid_price');
+  const profitLossIndex = headers.indexOf('profit_and_loss');
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -61,7 +109,7 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
     const askPrices = getColumnValues(columns, [9, 11, 13]);
     const askVolumes = getColumnValues(columns, [10, 12, 14]);
 
-    const rawMid = columns[15]?.trim();
+    const rawMid = columns[fairValueIndex === -1 ? 15 : fairValueIndex]?.trim();
     const parsedMid = rawMid === '' ? NaN : Number(rawMid);
     const previousMidPrice = previousMidPrices[product];
 
@@ -69,7 +117,7 @@ function getActivityLogs(logLines: string): ActivityLogRow[] {
     const shouldFillMidPrice = missingMid && previousMidPrice !== undefined;
     const midPrice = shouldFillMidPrice ? previousMidPrice : parsedMid;
 
-    const rawProfitLoss = columns[16]?.trim();
+    const rawProfitLoss = columns[profitLossIndex === -1 ? 16 : profitLossIndex]?.trim();
     const parsedProfitLoss = rawProfitLoss === '' ? NaN : Number(rawProfitLoss);
     const previousProfitLoss = previousProfitLosses[product];
     const hasEmptyBook = bidPrices.length === 0 && askPrices.length === 0;
@@ -275,7 +323,8 @@ function getAlgorithmData(resultLog: ResultLog): AlgorithmDataRow[] {
 }
 
 export function parseAlgorithmLogs(resultLog: ResultLog, summary?: AlgorithmSummary): Algorithm {
-  const activityLogs = getActivityLogs(resultLog.activitiesLog);
+  const normalizedActivitiesLog = normalizeActivitiesLog(resultLog.activitiesLog);
+  const activityLogs = getActivityLogs(normalizedActivitiesLog);
   const data = getAlgorithmData(resultLog);
 
   if (activityLogs.length === 0 && data.length === 0) {
@@ -299,6 +348,7 @@ export function parseAlgorithmLogs(resultLog: ResultLog, summary?: AlgorithmSumm
   return {
     summary,
     activityLogs,
+    activityPriceLabel: getActivityPriceLabel(normalizedActivitiesLog),
     data,
     tradeHistory: resultLog.tradeHistory ?? [],
   };

@@ -32,9 +32,6 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
   const [viewMode, setViewMode] = useState<ViewMode>('price');
 
   const rows = algorithm.activityLogs.filter(row => row.product === symbol);
-  const filledMidPriceData: [number, number][] = rows
-    .filter(row => row.isFilledMidPrice)
-    .map(row => [row.timestamp, row.midPrice]);
 
   const [groupSize, setGroupSize] = useState(() => defaultGroupSize(rows.length));
   const size = parseInt(groupSize, 10);
@@ -118,14 +115,6 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         data: [],
       },
       {
-        type: 'scatter',
-        name: 'Filled mid price',
-        color: '#9ca3af',
-        marker: { symbol: 'rightarrow', radius: 7 },
-        data: filledMidPriceData,
-        dataGrouping: { enabled: false },
-      },
-      {
         type: 'line',
         name: 'Ask 1',
         color: getAskColor(1.0),
@@ -157,7 +146,7 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
       }
       (priceSeries[3] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.midPrice]);
       for (let i = 0; i < row.askPrices.length; i++) {
-        (priceSeries[i + 5] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.askPrices[i]]);
+        (priceSeries[i + 4] as Highcharts.SeriesLineOptions).data!.push([row.timestamp, row.askPrices[i]]);
       }
     }
 
@@ -170,17 +159,6 @@ export function CandlestickChart({ symbol }: CandlestickChartProps): ReactNode {
         formatter: function () {
           const points = this.points ?? (this.point ? [this.point] : []);
           if (points.length === 0) return false;
-
-          const filledPoint = points.find(point => point.series.name === 'Filled mid price');
-
-          if (filledPoint) {
-            return (
-              `Timestamp ${formatNumber(Number(this.x))}<br/>` +
-              `<span style="color:${filledPoint.color}">&#9654;</span> Filled mid price: <b>${formatNumber(
-                Number(filledPoint.y),
-              )}</b><br/>`
-            );
-          }
 
           return (
             `Timestamp ${formatNumber(Number(this.x))}<br/>` +

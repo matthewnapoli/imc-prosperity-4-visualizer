@@ -128,6 +128,7 @@ export interface AlgorithmDataRow {
 export interface Algorithm {
   summary?: AlgorithmSummary;
   activityLogs: ActivityLogRow[];
+  activityPriceLabel: string;
   data: AlgorithmDataRow[];
   tradeHistory: ResultLogTradeHistoryItem[];
 }

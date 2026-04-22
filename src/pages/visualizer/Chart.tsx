@@ -41,28 +41,6 @@ if (rendererSymbols.star === undefined) {
   };
 }
 
-if (rendererSymbols.rightarrow === undefined) {
-  rendererSymbols.rightarrow = (x: number, y: number, w: number, h: number): Highcharts.SVGPathArray => {
-    const shaftHeight = h * 0.42;
-    const shaftTop = y + (h - shaftHeight) / 2;
-    const shaftBottom = shaftTop + shaftHeight;
-    const shaftEnd = x + w * 0.52;
-    const headTipX = x + w;
-    const centerY = y + h / 2;
-
-    return [
-      ['M', x, shaftTop],
-      ['L', shaftEnd, shaftTop],
-      ['L', shaftEnd, y],
-      ['L', headTipX, centerY],
-      ['L', shaftEnd, y + h],
-      ['L', shaftEnd, shaftBottom],
-      ['L', x, shaftBottom],
-      ['Z'],
-    ];
-  };
-}
-
 // Highcharts themes are distributed as Highcharts extensions
 // The normal way to use them is to apply these extensions to the global Highcharts object
 // However, themes work by overriding the default options, with no way to rollback

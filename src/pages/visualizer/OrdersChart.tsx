@@ -53,10 +53,6 @@ function formatScatterTooltipLine(
     return `<span style="color:${color}">${glyph}</span> ${name}: <b>${formatNumber(y)}</b> (qty: ${quantity})<br/>`;
   }
 
-  if (name === 'Filled mid price') {
-    return `<span style="color:${color}">${glyph}</span> Filled mid price: <b>${formatNumber(y)}</b><br/>`;
-  }
-
   return `<span style="color:${color}">${glyph}</span> ${name}: <b>${formatNumber(y)}</b> (qty: ${quantity}, buyer: ${buyer}, seller: ${seller})<br/>`;
 }
 
@@ -94,9 +90,9 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
   const makerBuyColor = getBidColor(0.8);
   const makerSellColor = getAskColor(0.8);
   const otherTradeColor = '#a855f7';
+  const activityPriceLabel = algorithm.activityPriceLabel ?? 'Mid price';
 
   const midPriceData: [number, number][] = [];
-  const filledMidPriceData: [number, number][] = [];
   const bid1Data: [number, number][] = [];
   const bid2Data: [number, number][] = [];
   const bid3Data: [number, number][] = [];
@@ -114,9 +110,6 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     if (row.product !== symbol) continue;
 
     midPriceData.push([row.timestamp, row.midPrice]);
-    if (row.isFilledMidPrice) {
-      filledMidPriceData.push([row.timestamp, row.midPrice]);
-    }
 
     if (row.bidPrices.length >= 1) bid1Data.push([row.timestamp, row.bidPrices[0]]);
     if (row.bidPrices.length >= 2) bid2Data.push([row.timestamp, row.bidPrices[1]]);
@@ -241,19 +234,11 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
     },
     {
       type: 'line',
-      name: 'Mid price',
+      name: activityPriceLabel,
       color: 'gray',
       dashStyle: 'Dash',
       data: midPriceData,
       marker: { enabled: false },
-      dataGrouping: { enabled: false },
-    },
-    {
-      type: 'scatter',
-      name: 'Filled mid price',
-      color: '#9ca3af',
-      data: filledMidPriceData,
-      marker: { symbol: 'rightarrow', radius: 7 },
       dataGrouping: { enabled: false },
     },
     {
@@ -401,7 +386,6 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
 
   const scatterTooltipLinesByTimestamp = new Map<number, string[]>();
   if (priceMode !== 'volume') {
-    addScatterTooltipLines(scatterTooltipLinesByTimestamp, filledMidPriceData, 'Filled mid price', '#9ca3af', '&#9654;');
     addScatterTooltipLines(scatterTooltipLinesByTimestamp, unfilledBuyData, 'Buy (order)', buyOrderColor, '&#9679;');
     addScatterTooltipLines(scatterTooltipLinesByTimestamp, unfilledSellData, 'Sell (order)', sellOrderColor, '&#9679;');
     addScatterTooltipLines(scatterTooltipLinesByTimestamp, takerBuyData, 'Buy (taker)', takerBuyColor, '&#9670;');
@@ -421,7 +405,7 @@ export function OrdersChart({ symbol }: OrdersChartProps): ReactNode {
             formatter: function () {
               const points = this.points ?? (this.point ? [this.point] : []);
               const plottedSeriesNames = new Set([
-                'Mid price',
+                activityPriceLabel,
                 'Bid 1',
                 'Bid 2',
                 'Bid 3',
